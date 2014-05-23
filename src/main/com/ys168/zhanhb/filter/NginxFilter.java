@@ -29,17 +29,14 @@ public class NginxFilter implements Filter {
             // retry once
             for (boolean retry = true;; retry = false) {
                 try {
-                    InetAddress[] addrs = InetAddress.getAllByName("localhost");
-                    for (InetAddress addr : addrs) {
+                    for (InetAddress addr : InetAddress.getAllByName("localhost")) {
                         set.add(addr.getHostAddress());
                     }
                     Enumeration<NetworkInterface> nifs = NetworkInterface.getNetworkInterfaces();
                     while (nifs.hasMoreElements()) {
-                        NetworkInterface ni = nifs.nextElement();
-                        Enumeration<InetAddress> ias = ni.getInetAddresses();
+                        Enumeration<InetAddress> ias = nifs.nextElement().getInetAddresses();
                         while (ias.hasMoreElements()) {
-                            InetAddress addr = ias.nextElement();
-                            set.add(addr.getHostAddress());
+                            set.add(ias.nextElement().getHostAddress());
                         }
                     }
                     break;
@@ -76,19 +73,23 @@ public class NginxFilter implements Filter {
 
         @Override
         public String getRemoteAddr() {
-            String forwardedFor = getHeader("x-forwarded-for");
+            String forwardedFor = getHeader("X-Forwarded-For");
             if (forwardedFor != null) {
                 String[] split = forwardedFor.trim().split(seperator);
                 Set<String> trust = excludes;
                 if (trust != null) {
                     String ip = super.getRemoteAddr().trim();
                     for (int i = split.length; trust.contains(ip) && --i >= 0;) {
-                        ip = split[i];
+                        if (isValidAddress(split[i])) {
+                            ip = split[i];
+                        }
                     }
                     return ip;
                 } else {
                     for (int i = 0; i < split.length; ++i) {
-                        return split[i];
+                        if (isValidAddress(split[i])) {
+                            return split[i];
+                        }
                     }
                 }
             }
@@ -98,6 +99,10 @@ public class NginxFilter implements Filter {
         @Override
         public String getRemoteHost() {
             return getRemoteAddr();
+        }
+
+        private boolean isValidAddress(String str) {
+            return str != null && str.length() > 0 && !str.equalsIgnoreCase("unknown");
         }
     }
 }
