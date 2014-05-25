@@ -25,40 +25,14 @@ public class NginxFilter implements Filter {
     public void init(FilterConfig filterConfig) throws ServletException {
         String excludesString = filterConfig.getInitParameter("excludes");
         if (excludesString != null) {
-            Set<String> set = new HashSet<String>(Arrays.asList(excludesString.trim().split(seperator)));
-            // retry once
-            for (boolean retry = true;; retry = false) {
-                try {
-                    for (InetAddress addr : InetAddress.getAllByName("localhost")) {
-                        set.add(addr.getHostAddress());
-                    }
-                    Enumeration<NetworkInterface> nifs = NetworkInterface.getNetworkInterfaces();
-                    while (nifs.hasMoreElements()) {
-                        Enumeration<InetAddress> ias = nifs.nextElement().getInetAddresses();
-                        while (ias.hasMoreElements()) {
-                            set.add(ias.nextElement().getHostAddress());
-                        }
-                    }
-                    break;
-                } catch (IOException ex) {
-                    if (!retry) {
-                        break;
-                    }
-                } catch (SecurityException ex) {
-                    break;
-                }
-            }
-            excludes = set;
+            excludes = new HashSet<String>(Arrays.asList(excludesString.trim().split(seperator)));
         }
     }
 
     @Override
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
             throws IOException, ServletException {
-        chain.doFilter(
-                request instanceof HttpServletRequest
-                ? new NginxRequest((HttpServletRequest) request)
-                : request, response);
+        chain.doFilter(request instanceof HttpServletRequest ? new NginxRequest((HttpServletRequest) request) : request, response);
     }
 
     @Override
