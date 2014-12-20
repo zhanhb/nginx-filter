@@ -1,5 +1,10 @@
 nginx-filter
 ============
+
+Deprecated use org.apache.catalina.valves.RemoteIpValve instead.
+This project will never be updated any more.
+
+============
 A filter for java web applications, you can usually configure global server.
 ```
 <filter>
